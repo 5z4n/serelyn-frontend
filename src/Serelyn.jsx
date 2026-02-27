@@ -1,4 +1,6 @@
 import React, { useState, useRef } from "react";
+import { useState } from "react";
+import { signIn, signUp } from "./auth";
 // ─── Global Styles ────────────────────────────────────────────────────────────
 const GlobalStyles = () => (
   <style>{`
