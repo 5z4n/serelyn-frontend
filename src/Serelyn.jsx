@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from "react";
-
+import React, { useState } from "react";
 // ─── Global Styles ────────────────────────────────────────────────────────────
 const GlobalStyles = () => (
   <style>{`
