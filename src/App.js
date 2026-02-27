@@ -1,8 +1,8 @@
 import React from "react";
-import Serelyn from "./Serelyn";   // change name if your file name is different
+import App from "./App";   // change name if your file name is different
 
 function App() {
-  return <Serelyn />;
+  return <App />;
 }
 
 export default App;

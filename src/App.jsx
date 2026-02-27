@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
-import { useState } from "react";
 import { signIn, signUp } from "./auth";
+
 // ─── Global Styles ────────────────────────────────────────────────────────────
 const GlobalStyles = () => (
   <style>{`
@@ -111,7 +111,7 @@ const GlobalStyles = () => (
       position: relative;
       overflow: hidden;
     }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(90, 120, 99, 0.42); }
+    .btn-primary:hover  { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(90, 120, 99, 0.42); }
     .btn-primary:active { transform: translateY(0); }
     .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
@@ -294,6 +294,8 @@ const LandingPage = ({ onNavigate }) => {
   return (
     <div style={{ minHeight: "100vh", position: "relative" }}>
       <BackgroundOrbs />
+
+      {/* ── Nav ── */}
       <nav className="nav">
         <Logo />
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -304,7 +306,7 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </nav>
 
-      {/* Hero */}
+      {/* ── Hero ── */}
       <section style={{
         minHeight: "100vh", display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
@@ -371,7 +373,7 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* Features */}
+      {/* ── Features ── */}
       <section style={{ padding: "80px 24px 100px", position: "relative", zIndex: 1 }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <p style={{ textAlign: "center", fontSize: 13, letterSpacing: "0.1em", color: "var(--primary)", fontWeight: 500, marginBottom: 48, textTransform: "uppercase" }}>
@@ -379,7 +381,10 @@ const LandingPage = ({ onNavigate }) => {
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
             {features.map((f, i) => (
-              <div key={i} className="glass-card" style={{ padding: "36px 30px", transition: "transform 0.3s, box-shadow 0.3s", cursor: "default" }}
+              <div
+                key={i}
+                className="glass-card"
+                style={{ padding: "36px 30px", transition: "transform 0.3s, box-shadow 0.3s", cursor: "default" }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 28px 70px rgba(59,73,83,0.13)"; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
               >
@@ -397,7 +402,7 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* ── CTA Banner ── */}
       <section style={{ padding: "0 24px 100px", position: "relative", zIndex: 1 }}>
         <div style={{
           maxWidth: 720, margin: "0 auto",
@@ -422,44 +427,87 @@ const LandingPage = ({ onNavigate }) => {
 };
 
 // ─── Auth Page ────────────────────────────────────────────────────────────────
+// Supabase signIn / signUp are imported from ./auth.js
+// On success, user ID is stored in localStorage("user_id")
+// ─────────────────────────────────────────────────────────────────────────────
 const AuthPage = ({ onNavigate, onLogin }) => {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [showPw, setShowPw] = useState(false);
 
+  // ── Main submit handler ────────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!form.email || !form.password) { setError("Please fill in all fields."); return; }
-    setLoading(true); setError("");
+    if (!form.email || !form.password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
     try {
-      const endpoint = mode === "login" ? "/login" : "/register";
-      const body = mode === "login"
-        ? { email: form.email, password: form.password }
-        : { name: form.name, email: form.email, password: form.password };
-      const res = await fetch(`https://serelyn-backend.onrender.com/analyze${endpoint}`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.message || "Something went wrong."); }
-      onLogin(form.email.split("@")[0]);
-    } catch {
-      // Demo fallback — works without backend
-      if (form.email && form.password) { onLogin(form.email.split("@")[0]); return; }
-      setError("Could not connect. Please try again.");
-    } finally { setLoading(false); }
+      if (mode === "register") {
+        // ── Supabase Sign Up ────────────────────────────────────────────────
+        const { data, error: signUpError } = await signUp(form.email, form.password);
+        if (signUpError) throw new Error(signUpError.message);
+
+        const userId = data?.user?.id;
+        if (userId) {
+          localStorage.setItem("user_id", userId);
+          console.log("Registered user:", userId);
+        }
+
+        setSuccess("Account created! Signing you in…");
+        await new Promise(r => setTimeout(r, 800));
+
+        // Use display name if provided, otherwise derive from email
+        onLogin(form.name.trim() || form.email.split("@")[0]);
+
+      } else {
+        // ── Supabase Sign In ────────────────────────────────────────────────
+        const { data, error: signInError } = await signIn(form.email, form.password);
+        if (signInError) throw new Error(signInError.message);
+
+        const userId = data?.user?.id;
+        if (userId) {
+          localStorage.setItem("user_id", userId);
+          console.log("Logged in user:", userId);
+        }
+
+        // Prefer saved display name in metadata, otherwise derive from email
+        const displayName =
+          data?.user?.user_metadata?.name ||
+          form.name.trim() ||
+          form.email.split("@")[0];
+
+        onLogin(displayName);
+      }
+    } catch (e) {
+      setError(e.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+  // ──────────────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, position: "relative" }}>
       <BackgroundOrbs variant="auth" />
-      <button onClick={() => onNavigate("landing")} style={{
-        position: "fixed", top: 22, left: 28, zIndex: 100,
-        display: "flex", alignItems: "center", gap: 6,
-        background: "rgba(235,244,221,0.7)", backdropFilter: "blur(12px)",
-        border: "1px solid rgba(144,171,139,0.25)", borderRadius: 50,
-        padding: "8px 18px 8px 14px", color: "var(--secondary)",
-        fontSize: 14, fontFamily: "var(--font-body)", cursor: "pointer", transition: "all 0.2s",
-      }}
+
+      {/* Back button */}
+      <button
+        onClick={() => onNavigate("landing")}
+        style={{
+          position: "fixed", top: 22, left: 28, zIndex: 100,
+          display: "flex", alignItems: "center", gap: 6,
+          background: "rgba(235,244,221,0.7)", backdropFilter: "blur(12px)",
+          border: "1px solid rgba(144,171,139,0.25)", borderRadius: 50,
+          padding: "8px 18px 8px 14px", color: "var(--secondary)",
+          fontSize: 14, fontFamily: "var(--font-body)", cursor: "pointer", transition: "all 0.2s",
+        }}
         onMouseEnter={e => e.currentTarget.style.background = "rgba(144,171,139,0.15)"}
         onMouseLeave={e => e.currentTarget.style.background = "rgba(235,244,221,0.7)"}
       >
@@ -467,6 +515,8 @@ const AuthPage = ({ onNavigate, onLogin }) => {
       </button>
 
       <div className="glass-card anim-scale" style={{ width: "100%", maxWidth: 420, padding: "48px 44px", position: "relative", zIndex: 1 }}>
+
+        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 36 }}>
           <Logo size="lg" />
           <p style={{ marginTop: 12, fontSize: 14, color: "rgba(59,73,83,0.55)", fontWeight: 300 }}>
@@ -474,71 +524,135 @@ const AuthPage = ({ onNavigate, onLogin }) => {
           </p>
         </div>
 
+        {/* Toggle — Sign In / Register */}
         <div style={{ display: "flex", background: "rgba(144,171,139,0.12)", borderRadius: 50, padding: 4, marginBottom: 32 }}>
           {["login", "register"].map(m => (
-            <button key={m} onClick={() => { setMode(m); setError(""); }} style={{
-              flex: 1, padding: "9px 0", borderRadius: 50, border: "none", cursor: "pointer",
-              fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, transition: "all 0.25s",
-              background: mode === m ? "linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)" : "transparent",
-              color: mode === m ? "#fff" : "var(--secondary)",
-              boxShadow: mode === m ? "0 3px 12px rgba(90,120,99,0.3)" : "none",
-            }}>
+            <button
+              key={m}
+              onClick={() => { setMode(m); setError(""); setSuccess(""); }}
+              style={{
+                flex: 1, padding: "9px 0", borderRadius: 50, border: "none", cursor: "pointer",
+                fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 500, transition: "all 0.25s",
+                background: mode === m
+                  ? "linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)"
+                  : "transparent",
+                color: mode === m ? "#fff" : "var(--secondary)",
+                boxShadow: mode === m ? "0 3px 12px rgba(90,120,99,0.3)" : "none",
+              }}
+            >
               {m === "login" ? "Sign In" : "Register"}
             </button>
           ))}
         </div>
 
+        {/* Fields */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+          {/* Name — register only */}
           {mode === "register" && (
             <div className="anim-fade">
-              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--secondary)", marginBottom: 6, letterSpacing: "0.04em" }}>YOUR NAME</label>
-              <input className="s-input" placeholder="What should we call you?" value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })} />
+              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--secondary)", marginBottom: 6, letterSpacing: "0.04em" }}>
+                YOUR NAME
+              </label>
+              <input
+                className="s-input"
+                placeholder="What should we call you?"
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+              />
             </div>
           )}
+
+          {/* Email */}
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--secondary)", marginBottom: 6, letterSpacing: "0.04em" }}>EMAIL</label>
-            <input className="s-input" type="email" placeholder="your@email.com" value={form.email}
+            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--secondary)", marginBottom: 6, letterSpacing: "0.04em" }}>
+              EMAIL
+            </label>
+            <input
+              className="s-input"
+              type="email"
+              placeholder="your@email.com"
+              value={form.email}
               onChange={e => setForm({ ...form, email: e.target.value })}
-              onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+              onKeyDown={e => e.key === "Enter" && handleSubmit()}
+            />
           </div>
+
+          {/* Password */}
           <div>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--secondary)", marginBottom: 6, letterSpacing: "0.04em" }}>PASSWORD</label>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--secondary)", marginBottom: 6, letterSpacing: "0.04em" }}>
+              PASSWORD
+            </label>
             <div style={{ position: "relative" }}>
-              <input className="s-input" type={showPw ? "text" : "password"} placeholder="••••••••"
-                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
+              <input
+                className="s-input"
+                type={showPw ? "text" : "password"}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
                 onKeyDown={e => e.key === "Enter" && handleSubmit()}
-                style={{ paddingRight: 46 }} />
-              <button onClick={() => setShowPw(!showPw)} style={{
-                position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
-                background: "none", border: "none", cursor: "pointer",
-                color: "rgba(59,73,83,0.45)", fontSize: 13, fontFamily: "var(--font-body)",
-              }}>
+                style={{ paddingRight: 46 }}
+              />
+              <button
+                onClick={() => setShowPw(!showPw)}
+                style={{
+                  position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "rgba(59,73,83,0.45)", fontSize: 13, fontFamily: "var(--font-body)",
+                }}
+              >
                 {showPw ? "hide" : "show"}
               </button>
             </div>
           </div>
 
+          {/* Error */}
           {error && (
             <div className="anim-fade" style={{
               padding: "10px 14px", borderRadius: 10,
               background: "rgba(201,122,122,0.1)", border: "1px solid rgba(201,122,122,0.25)",
               fontSize: 13, color: "#C97A7A",
-            }}>{error}</div>
+            }}>
+              ⚠ {error}
+            </div>
           )}
 
-          <button className="btn-primary" onClick={handleSubmit} disabled={loading} style={{ width: "100%", justifyContent: "center", marginTop: 6 }}>
+          {/* Success */}
+          {success && (
+            <div className="anim-fade" style={{
+              padding: "10px 14px", borderRadius: 10,
+              background: "rgba(144,171,139,0.12)", border: "1px solid rgba(144,171,139,0.3)",
+              fontSize: 13, color: "var(--secondary)",
+            }}>
+              ✓ {success}
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            className="btn-primary"
+            onClick={handleSubmit}
+            disabled={loading}
+            style={{ width: "100%", justifyContent: "center", marginTop: 6 }}
+          >
             {loading
-              ? <div style={{ display: "flex", gap: 5 }}><div className="loader-dot" /><div className="loader-dot" /><div className="loader-dot" /></div>
+              ? <div style={{ display: "flex", gap: 5 }}>
+                <div className="loader-dot" />
+                <div className="loader-dot" />
+                <div className="loader-dot" />
+              </div>
               : mode === "login" ? "Sign In →" : "Create Account →"
             }
           </button>
         </div>
 
+        {/* Switch mode */}
         <p style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "rgba(59,73,83,0.45)" }}>
           {mode === "login" ? "New to Serelyn? " : "Already have an account? "}
-          <span onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
-            style={{ color: "var(--secondary)", cursor: "pointer", fontWeight: 500 }}>
+          <span
+            onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setSuccess(""); }}
+            style={{ color: "var(--secondary)", cursor: "pointer", fontWeight: 500 }}
+          >
             {mode === "login" ? "Create account" : "Sign in"}
           </span>
         </p>
@@ -566,45 +680,70 @@ const Dashboard = ({ user, onLogout }) => {
 
   const handleAnalyze = async () => {
     if (!text.trim()) return;
-    setLoading(true); setResult(null);
+    setLoading(true);
+    setResult(null);
+
     const emotion = detectEmotion(text);
+
     try {
       const res = await fetch("http://localhost:8000/analyze", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Pass stored Supabase user ID to the backend for personalization
+          "X-User-Id": localStorage.getItem("user_id") || "",
+        },
         body: JSON.stringify({ text }),
       });
+
       if (res.ok) {
         const data = await res.json();
-        const r = { emotion: data.emotion || emotion, response: data.response || AI_RESPONSES[emotion], text, timestamp: new Date() };
-        setResult(r); setHistory(h => [r, ...h.slice(0, 4)]);
-      } else throw new Error();
+        const r = {
+          emotion: data.emotion || emotion,
+          response: data.response || AI_RESPONSES[emotion],
+          text,
+          timestamp: new Date(),
+        };
+        setResult(r);
+        setHistory(h => [r, ...h.slice(0, 4)]);
+      } else {
+        throw new Error("Backend error");
+      }
     } catch {
+      // Graceful offline / no-backend fallback
       const r = { emotion, response: AI_RESPONSES[emotion], text, timestamp: new Date() };
-      setResult(r); setHistory(h => [r, ...h.slice(0, 4)]);
+      setResult(r);
+      setHistory(h => [r, ...h.slice(0, 4)]);
     } finally {
       setLoading(false);
       setTimeout(() => responseRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 100);
     }
   };
 
-  const em = result ? EMOTIONS[result.emotion] || EMOTIONS.neutral : null;
+  const em = result ? (EMOTIONS[result.emotion] || EMOTIONS.neutral) : null;
 
   return (
     <div style={{ minHeight: "100vh", position: "relative" }}>
       <BackgroundOrbs />
+
+      {/* ── Nav ── */}
       <nav className="nav">
         <Logo />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ fontSize: 13, color: "rgba(59,73,83,0.55)" }}>
             Hello, <strong style={{ color: "var(--secondary)" }}>{user}</strong>
           </span>
-          <button className="btn-ghost" style={{ padding: "8px 18px", fontSize: 13 }} onClick={onLogout}>Sign out</button>
+          <button className="btn-ghost" style={{ padding: "8px 18px", fontSize: 13 }} onClick={onLogout}>
+            Sign out
+          </button>
         </div>
       </nav>
 
+      {/* ── Main ── */}
       <main style={{ paddingTop: 100, paddingBottom: 80, position: "relative", zIndex: 1 }}>
         <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px" }}>
 
+          {/* Greeting */}
           <div className="anim-fade-up" style={{ textAlign: "center", marginBottom: 48 }}>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(32px, 5vw, 48px)", color: "var(--dark)", lineHeight: 1.15, marginBottom: 12 }}>
               {greeting}
@@ -617,7 +756,8 @@ const Dashboard = ({ user, onLogout }) => {
           {/* Input card */}
           <div className="glass-card anim-fade-up" style={{ animationDelay: "0.15s", padding: "28px 28px 24px", marginBottom: 24 }}>
             <div style={{ position: "relative" }}>
-              <textarea className="chat-textarea"
+              <textarea
+                className="chat-textarea"
                 placeholder="Share whatever is on your mind..."
                 value={text}
                 onChange={e => { setText(e.target.value); setCharCount(e.target.value.length); }}
@@ -628,19 +768,31 @@ const Dashboard = ({ user, onLogout }) => {
                 {charCount}/800
               </span>
             </div>
+
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
               <span style={{ fontSize: 12, color: "rgba(59,73,83,0.35)" }}>⌘ + Enter to send</span>
               <div style={{ display: "flex", gap: 10 }}>
                 {result && (
-                  <button className="btn-ghost" style={{ padding: "10px 18px", fontSize: 13 }}
-                    onClick={() => { setText(""); setResult(null); setCharCount(0); }}>
+                  <button
+                    className="btn-ghost"
+                    style={{ padding: "10px 18px", fontSize: 13 }}
+                    onClick={() => { setText(""); setResult(null); setCharCount(0); }}
+                  >
                     New Entry
                   </button>
                 )}
-                <button className="btn-primary" onClick={handleAnalyze}
-                  disabled={loading || !text.trim()} style={{ padding: "10px 22px", fontSize: 14 }}>
+                <button
+                  className="btn-primary"
+                  onClick={handleAnalyze}
+                  disabled={loading || !text.trim()}
+                  style={{ padding: "10px 22px", fontSize: 14 }}
+                >
                   {loading
-                    ? <span style={{ display: "flex", gap: 4 }}><div className="loader-dot" /><div className="loader-dot" /><div className="loader-dot" /></span>
+                    ? <span style={{ display: "flex", gap: 4 }}>
+                      <div className="loader-dot" />
+                      <div className="loader-dot" />
+                      <div className="loader-dot" />
+                    </span>
                     : "Send →"
                   }
                 </button>
@@ -663,6 +815,8 @@ const Dashboard = ({ user, onLogout }) => {
           {/* Response card */}
           {result && !loading && (
             <div ref={responseRef} className="response-card glass-card" style={{ padding: "28px 30px" }}>
+
+              {/* Emotion row */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
                 <div style={{
                   width: 38, height: 38, borderRadius: "50%",
@@ -672,7 +826,9 @@ const Dashboard = ({ user, onLogout }) => {
                   {em.icon}
                 </div>
                 <div>
-                  <span style={{ fontSize: 11, color: "rgba(59,73,83,0.45)", letterSpacing: "0.06em", fontWeight: 500 }}>DETECTED EMOTION</span>
+                  <span style={{ fontSize: 11, color: "rgba(59,73,83,0.45)", letterSpacing: "0.06em", fontWeight: 500 }}>
+                    DETECTED EMOTION
+                  </span>
                   <div>
                     <span className="emotion-badge" style={{ background: em.bg, color: em.color, padding: "3px 12px", fontSize: 14 }}>
                       {em.label}
@@ -683,6 +839,7 @@ const Dashboard = ({ user, onLogout }) => {
 
               <div style={{ height: 1, background: "linear-gradient(to right, rgba(144,171,139,0.2), transparent)", marginBottom: 20 }} />
 
+              {/* AI response */}
               <div style={{ display: "flex", gap: 14 }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: "50%", flexShrink: 0, marginTop: 2,
@@ -695,34 +852,44 @@ const Dashboard = ({ user, onLogout }) => {
                   </svg>
                 </div>
                 <div>
-                  <p style={{ fontSize: 11, color: "rgba(59,73,83,0.4)", letterSpacing: "0.06em", fontWeight: 500, marginBottom: 8 }}>SERELYN</p>
-                  <p style={{ fontSize: 16, color: "var(--dark)", lineHeight: 1.75, fontWeight: 300, fontFamily: "var(--font-display)", fontStyle: "italic" }}>
+                  <p style={{ fontSize: 11, color: "rgba(59,73,83,0.4)", letterSpacing: "0.06em", fontWeight: 500, marginBottom: 8 }}>
+                    SERELYN
+                  </p>
+                  <p style={{
+                    fontSize: 16, color: "var(--dark)", lineHeight: 1.75,
+                    fontWeight: 300, fontFamily: "var(--font-display)", fontStyle: "italic",
+                  }}>
                     {result.response}
                   </p>
                 </div>
               </div>
 
+              {/* Footer */}
               <div style={{ marginTop: 22, paddingTop: 16, borderTop: "1px solid rgba(144,171,139,0.12)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: 12, color: "rgba(59,73,83,0.35)" }}>
                   {result.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </span>
                 <div style={{ display: "flex", gap: 8 }}>
                   {["◎ Helpful", "◌ Not quite"].map(label => (
-                    <button key={label} style={{
-                      background: "rgba(144,171,139,0.1)", border: "1px solid rgba(144,171,139,0.2)",
-                      borderRadius: 50, padding: "5px 12px", fontSize: 11, color: "var(--secondary)",
-                      cursor: "pointer", fontFamily: "var(--font-body)", transition: "all 0.2s",
-                    }}
+                    <button
+                      key={label}
+                      style={{
+                        background: "rgba(144,171,139,0.1)", border: "1px solid rgba(144,171,139,0.2)",
+                        borderRadius: 50, padding: "5px 12px", fontSize: 11, color: "var(--secondary)",
+                        cursor: "pointer", fontFamily: "var(--font-body)", transition: "all 0.2s",
+                      }}
                       onMouseEnter={e => e.currentTarget.style.background = "rgba(144,171,139,0.2)"}
                       onMouseLeave={e => e.currentTarget.style.background = "rgba(144,171,139,0.1)"}
-                    >{label}</button>
+                    >
+                      {label}
+                    </button>
                   ))}
                 </div>
               </div>
             </div>
           )}
 
-          {/* History */}
+          {/* Recent entries */}
           {history.length > 1 && (
             <div style={{ marginTop: 48 }}>
               <p style={{ fontSize: 12, color: "rgba(59,73,83,0.4)", letterSpacing: "0.06em", fontWeight: 500, marginBottom: 16, textTransform: "uppercase" }}>
@@ -757,8 +924,16 @@ export default function App() {
   const [page, setPage] = useState("landing");
   const [user, setUser] = useState(null);
 
-  const handleLogin = (name) => { setUser(name); setPage("dashboard"); };
-  const handleLogout = () => { setUser(null); setPage("landing"); };
+  const handleLogin = (name) => {
+    setUser(name);
+    setPage("dashboard");
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem("user_id");
+    setPage("landing");
+  };
 
   return (
     <>

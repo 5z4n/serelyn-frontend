@@ -1,25 +1,29 @@
-import { supabase } from './supabase';
+import { createClient } from "@supabase/supabase-js";
 
-export const signUp = async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password
-    });
+// ─── Supabase client ──────────────────────────────────────────────────────────
+// Add your keys to a .env file in the project root:
+//   REACT_APP_SUPABASE_URL=https://your-project-id.supabase.co
+//   REACT_APP_SUPABASE_ANON_KEY=your-anon-key
+// ─────────────────────────────────────────────────────────────────────────────
+const supabase = createClient(
+    process.env.REACT_APP_SUPABASE_URL,
+    process.env.REACT_APP_SUPABASE_ANON_KEY
+);
 
-    return { data, error };
-};
+// ─── Sign up a new user ───────────────────────────────────────────────────────
+// Returns { data: { user, session }, error }
+export const signUp = (email, password) =>
+    supabase.auth.signUp({ email, password });
 
-const user = data.user;
-console.log(user.id);
+// ─── Sign in an existing user ─────────────────────────────────────────────────
+// Returns { data: { user, session }, error }
+export const signIn = (email, password) =>
+    supabase.auth.signInWithPassword({ email, password });
 
-await fetch(`${process.env.REACT_APP_API_URL}/analyze`, {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-        user_id: user.id,
-        text: message
-    })
-});
+// ─── Sign out the current user ────────────────────────────────────────────────
+export const signOut = () => supabase.auth.signOut();
 
+// ─── Get current session (useful for persisting login on refresh) ─────────────
+export const getSession = () => supabase.auth.getSession();
+
+export default supabase;
