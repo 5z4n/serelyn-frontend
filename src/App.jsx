@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { signIn, signUp } from "./auth";
+import { signIn, signUp, isSupabaseConfigured } from "./auth";
 import Chat from "./Chat";
 
 // ─── Global Styles ────────────────────────────────────────────────────────────
@@ -482,6 +482,10 @@ const AuthPage = ({ onNavigate, onLogin }) => {
   const handleSubmit = async () => {
     if (!form.email || !form.password) {
       setError("Please fill in all fields.");
+      return;
+    }
+    if (!isSupabaseConfigured()) {
+      setError("Auth is not configured. Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY in Vercel → Settings → Environment Variables, then redeploy.");
       return;
     }
     setLoading(true);

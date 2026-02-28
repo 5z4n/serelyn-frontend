@@ -43,12 +43,12 @@ Response:
 ### Deploy on Vercel
 
 1. Push your code to GitHub and import the repo in [Vercel](https://vercel.com).
-2. In the project **Settings → Environment Variables**, add:
-   - `REACT_APP_API_URL` = your Render backend URL (e.g. `https://serelyn-backend.onrender.com`)
-   - `REACT_APP_SUPABASE_URL` = your Supabase project URL
-   - `REACT_APP_SUPABASE_ANON_KEY` = your Supabase anon key
-3. Deploy. The build uses `npm run build` and outputs the `build` folder (see `vercel.json`).
-4. If a deployment fails, open the failed deployment → **Building** logs and fix the reported error. Redeploy after pushing a fix.
+2. **Required:** In the project go to **Settings → Environment Variables** and add (for **Production** and **Preview**):
+   - `REACT_APP_SUPABASE_URL` = your real Supabase URL, e.g. `https://YOUR-PROJECT-REF.supabase.co` (not `your-project.supabase.co`)
+   - `REACT_APP_SUPABASE_ANON_KEY` = your Supabase anon key (from Supabase dashboard → Settings → API)
+   - `REACT_APP_API_URL` = your Render backend URL, e.g. `https://serelyn-backend.onrender.com` (no trailing slash)
+3. **Redeploy:** After saving the variables, go to **Deployments** → open the latest deployment → **⋯** → **Redeploy** (env vars are applied on the next build).
+4. The build uses `npm run build` and outputs the `build` folder. If the deploy fails, check the build logs and fix the error.
 
 ---
 

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Chat.css";
 import MoodTrackerCalendar, { saveMoodForDate } from "./MoodTrackerCalendar";
+import { getRandomResponse } from "./responses";
 
 const EMOTION_MAP = {
   happy: { label: "Happy", color: "#7EB77F", bg: "rgba(126,183,127,0.2)" },
@@ -14,7 +15,20 @@ const EMOTION_MAP = {
 const getEmotionStyle = (emotion) =>
   EMOTION_MAP[emotion] || EMOTION_MAP.neutral;
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const QUICK_REPLIES = [
+  "I'm feeling anxious",
+  "How do I cope with stress?",
+  "I can't sleep",
+  "I'm overwhelmed",
+  "I'm feeling sad",
+  "How do I calm down?",
+  "I'm having a bad day",
+  "I feel lonely",
+  "I'm angry and don't know why",
+  "Tips for better sleep",
+  "I need to vent",
+  "How do I stop overthinking?",
+];
 
 function getStorageKey() {
   try {
@@ -55,10 +69,13 @@ export default function Chat({ user, onLogout, onNavigateHome }) {
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [view, setView] = useState("chat"); // "chat" | "mood"
+  const [moodTab, setMoodTab] = useState("calendar"); // "calendar" | "report"
   const [typingMessageId, setTypingMessageId] = useState(null);
   const [typingText, setTypingText] = useState("");
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const stopTypingRef = useRef(false);
+  const typingSpeedRef = useRef(38);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -90,35 +107,40 @@ export default function Chat({ user, onLogout, onNavigateHome }) {
     }
   }, [messages, activeConversationId]);
 
-  // Live typing effect: when we have a new full AI message, type it out
+  // Live typing effect: slow, can be stopped
   useEffect(() => {
     if (!typingMessageId) return;
     const full = messages.find((m) => m.id === typingMessageId);
     if (!full || full.role !== "assistant" || full.isPlaceholder) return;
     const target = full.text;
-    if (target.length <= typingText.length) {
-      setTypingMessageId(null);
-      setTypingText("");
+    if (stopTypingRef.current || target.length <= typingText.length) {
+      if (target.length <= typingText.length) {
+        setTypingMessageId(null);
+        setTypingText("");
+      }
+      stopTypingRef.current = false;
       return;
     }
+    const speed = typingSpeedRef.current;
     const t = setTimeout(() => {
+      if (stopTypingRef.current) {
+        setTypingText(target);
+        setTypingMessageId(null);
+        setTypingText("");
+        stopTypingRef.current = false;
+        return;
+      }
       setTypingText((prev) => target.slice(0, prev.length + 1));
-    }, 20);
+    }, speed);
     return () => clearTimeout(t);
   }, [typingMessageId, typingText, messages]);
 
-  const getUserId = () => {
-    const raw = localStorage.getItem("user_id");
-    if (!raw) return 0;
-    const num = parseInt(raw, 10);
-    return Number.isNaN(num) ? 0 : num;
-  };
-
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = (optionalText) => {
+    const text = (optionalText != null ? optionalText : input).trim();
     if (!text || loading) return;
 
     setInput("");
+    stopTypingRef.current = false;
     const userMsg = {
       id: "u-" + Date.now(),
       role: "user",
@@ -137,47 +159,29 @@ export default function Chat({ user, onLogout, onNavigateHome }) {
     setMessages((prev) => [...prev, userMsg, placeholderMsg]);
     setLoading(true);
 
-    try {
-      const res = await fetch(`${API_BASE.replace(/\/$/, "")}/analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: getUserId(), text }),
-      });
+    const delay = 600 + Math.random() * 900;
+    typingSpeedRef.current = 32 + Math.random() * 24;
 
-      if (!res.ok) throw new Error("API error");
-
-      const data = await res.json();
-      const emotion = (data.emotion || "neutral").toLowerCase();
+    setTimeout(() => {
+      const { emotion, response } = getRandomResponse();
       saveMoodForDate(todayKey(), emotion);
-
       const aiMsg = {
         id: "ai-" + Date.now(),
         role: "assistant",
-        text: data.response || "I'm here with you. How can I support you right now?",
-        emotion,
-        isPlaceholder: false,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => {
-        const next = prev.map((m) => (m.id === placeholderId ? aiMsg : m));
-        return next;
-      });
-      setTypingMessageId(aiMsg.id);
-      setTypingText("");
-    } catch (_) {
-      const aiMsg = {
-        id: "ai-" + Date.now(),
-        role: "assistant",
-        text: "I'm having trouble connecting right now. Please try again in a moment.",
-        emotion: "neutral",
+        text: response,
+        emotion: emotion.toLowerCase(),
         isPlaceholder: false,
         timestamp: new Date(),
       };
       setMessages((prev) => prev.map((m) => (m.id === placeholderId ? aiMsg : m)));
-    } finally {
+      setTypingMessageId(aiMsg.id);
+      setTypingText("");
       setLoading(false);
-    }
+    }, delay);
+  };
+
+  const stopTyping = () => {
+    stopTypingRef.current = true;
   };
 
   const handleNewChat = () => {
@@ -222,7 +226,8 @@ export default function Chat({ user, onLogout, onNavigateHome }) {
     onNavigateHome();
   };
 
-  const handleShowMood = () => {
+  const handleShowMood = (tab = "calendar") => {
+    setMoodTab(tab);
     setView("mood");
     setDrawerOpen(false);
   };
@@ -238,7 +243,7 @@ export default function Chat({ user, onLogout, onNavigateHome }) {
           </button>
           <div className="chat-logo"><span className="chat-logo-dot" /> Serelyn</div>
         </header>
-        <MoodTrackerCalendar onBack={handleBackToChat} />
+        <MoodTrackerCalendar onBack={handleBackToChat} initialTab={moodTab} />
       </div>
     );
   }
@@ -258,8 +263,11 @@ export default function Chat({ user, onLogout, onNavigateHome }) {
           <button type="button" className="chat-drawer-item" onClick={handleHome}>
             <HomeIcon /> Home
           </button>
-          <button type="button" className="chat-drawer-item" onClick={handleShowMood}>
+          <button type="button" className="chat-drawer-item" onClick={() => handleShowMood("calendar")}>
             <CalendarIcon /> Mood calendar
+          </button>
+          <button type="button" className="chat-drawer-item" onClick={() => handleShowMood("report")}>
+            <ReportIcon /> Weekly report
           </button>
           <button type="button" className="chat-drawer-item" onClick={handleNewChat}>
             <NewChatIcon /> New chat
@@ -344,6 +352,28 @@ export default function Chat({ user, onLogout, onNavigateHome }) {
           <div ref={messagesEndRef} className="chat-scroll-anchor" />
         </div>
 
+        <div className="chat-quick-replies">
+          {QUICK_REPLIES.map((q) => (
+            <button
+              key={q}
+              type="button"
+              className="chat-quick-reply-btn"
+              onClick={() => sendMessage(q)}
+              disabled={loading}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+
+        {typingMessageId && (
+          <div className="chat-stop-wrap">
+            <button type="button" className="chat-stop-btn" onClick={stopTyping} aria-label="Stop">
+              Stop
+            </button>
+          </div>
+        )}
+
         <div className="chat-input-area">
           <textarea
             ref={inputRef}
@@ -361,7 +391,7 @@ export default function Chat({ user, onLogout, onNavigateHome }) {
           <button
             type="button"
             className="chat-send"
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={loading || !input.trim()}
             aria-label="Send"
           >
@@ -409,6 +439,14 @@ function NewChatIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+function ReportIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
     </svg>
   );
 }

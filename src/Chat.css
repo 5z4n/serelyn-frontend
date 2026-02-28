@@ -315,6 +315,59 @@
   margin-left: 0;
 }
 
+/* Quick reply buttons */
+.chat-quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0 12px;
+  flex-shrink: 0;
+}
+
+.chat-quick-reply-btn {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(144, 171, 139, 0.4);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--chat-dark);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.chat-quick-reply-btn:hover:not(:disabled) {
+  background: rgba(144, 171, 139, 0.15);
+  border-color: var(--chat-primary);
+}
+
+.chat-quick-reply-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chat-stop-wrap {
+  padding: 4px 0 8px;
+  flex-shrink: 0;
+}
+
+.chat-stop-btn {
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(201, 122, 122, 0.5);
+  background: rgba(201, 122, 122, 0.12);
+  color: #C97A7A;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chat-stop-btn:hover {
+  background: rgba(201, 122, 122, 0.25);
+}
+
 /* Input area — fixed at bottom */
 .chat-input-area {
   position: sticky;
@@ -569,6 +622,127 @@
   font-size: 22px;
   font-weight: 600;
   color: var(--chat-dark);
+}
+
+.mood-calendar-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.mood-calendar-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid rgba(144, 171, 139, 0.4);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--chat-dark);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.mood-calendar-tab--active {
+  background: rgba(144, 171, 139, 0.25);
+  border-color: var(--chat-primary);
+  color: var(--chat-secondary);
+}
+
+.mood-report {
+  margin-bottom: 24px;
+}
+
+.mood-report-heading {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--chat-dark);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mood-report-days {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.mood-report-day {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.mood-report-day-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.mood-report-day-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--chat-dark);
+}
+
+.mood-report-day-date {
+  font-size: 11px;
+  color: rgba(59, 73, 83, 0.5);
+}
+
+.mood-report-day-bar {
+  height: 24px;
+  border-radius: 8px;
+  min-width: 40px;
+}
+
+.mood-report-day-emotion {
+  font-size: 12px;
+  color: var(--chat-dark);
+  min-width: 56px;
+  text-align: right;
+}
+
+.mood-report-trend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mood-report-trend-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 48px;
+  align-items: center;
+  gap: 10px;
+}
+
+.mood-report-trend-label {
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.mood-report-trend-bar-wrap {
+  height: 12px;
+  background: rgba(144, 171, 139, 0.15);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.mood-report-trend-bar {
+  height: 100%;
+  border-radius: 6px;
+  min-width: 2px;
+  transition: width 0.3s ease;
+}
+
+.mood-report-trend-count {
+  font-size: 12px;
+  color: rgba(59, 73, 83, 0.6);
+  text-align: right;
 }
 
 .mood-calendar-nav {

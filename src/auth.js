@@ -1,14 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 
-// ─── Supabase client ──────────────────────────────────────────────────────────
-// Add your keys to a .env file in the project root:
-//   REACT_APP_SUPABASE_URL=https://your-project-id.supabase.co
-//   REACT_APP_SUPABASE_ANON_KEY=your-anon-key
-// ─────────────────────────────────────────────────────────────────────────────
-const supabase = createClient(
-    process.env.REACT_APP_SUPABASE_URL,
-    process.env.REACT_APP_SUPABASE_ANON_KEY
-);
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
+
+const isConfigured = () => {
+  const url = (SUPABASE_URL || "").trim();
+  return url.length > 0 && !url.includes("your-project") && (SUPABASE_ANON_KEY || "").length > 0;
+};
+
+const supabase = createClient(SUPABASE_URL || "", SUPABASE_ANON_KEY || "");
 
 // ─── Sign up a new user ───────────────────────────────────────────────────────
 // Returns { data: { user, session }, error }
@@ -26,4 +26,5 @@ export const signOut = () => supabase.auth.signOut();
 // ─── Get current session (useful for persisting login on refresh) ─────────────
 export const getSession = () => supabase.auth.getSession();
 
+export { isConfigured as isSupabaseConfigured };
 export default supabase;
