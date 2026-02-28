@@ -58,10 +58,6 @@
   transform: scale(1.05);
 }
 
-.chat-btn-icon {
-  /* legacy if used elsewhere */
-}
-
 .chat-logo {
   display: flex;
   align-items: center;

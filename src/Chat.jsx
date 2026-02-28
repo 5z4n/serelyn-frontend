@@ -16,11 +16,19 @@ const getEmotionStyle = (emotion) =>
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
-const STORAGE_KEY = () => `serelyn_conversations_${localStorage.getItem("user_id") || "anon"}`;
+function getStorageKey() {
+  try {
+    if (typeof window === "undefined") return "serelyn_conversations_anon";
+    return `serelyn_conversations_${localStorage.getItem("user_id") || "anon"}`;
+  } catch (_) {
+    return "serelyn_conversations_anon";
+  }
+}
 
 function loadConversations() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY());
+    if (typeof window === "undefined") return [];
+    const raw = localStorage.getItem(getStorageKey());
     return raw ? JSON.parse(raw) : [];
   } catch (_) {
     return [];
@@ -29,7 +37,8 @@ function loadConversations() {
 
 function saveConversations(list) {
   try {
-    localStorage.setItem(STORAGE_KEY(), JSON.stringify(list));
+    if (typeof window === "undefined") return;
+    localStorage.setItem(getStorageKey(), JSON.stringify(list));
   } catch (_) {}
 }
 

@@ -12,13 +12,18 @@ const EMOTION_COLORS = {
 const MONTHS = "January,February,March,April,May,June,July,August,September,October,November,December".split(",");
 
 export function getMoodStorageKey() {
-  const uid = localStorage.getItem("user_id") || "anon";
-  return `serelyn_mood_${uid}`;
+  try {
+    if (typeof window === "undefined") return "serelyn_mood_anon";
+    return `serelyn_mood_${localStorage.getItem("user_id") || "anon"}`;
+  } catch (_) {
+    return "serelyn_mood_anon";
+  }
 }
 
 export function saveMoodForDate(dateKey, emotion) {
-  const key = getMoodStorageKey();
   try {
+    if (typeof window === "undefined") return;
+    const key = getMoodStorageKey();
     const data = JSON.parse(localStorage.getItem(key) || "{}");
     data[dateKey] = (emotion || "neutral").toLowerCase();
     localStorage.setItem(key, JSON.stringify(data));
@@ -26,8 +31,9 @@ export function saveMoodForDate(dateKey, emotion) {
 }
 
 export function getMoodData() {
-  const key = getMoodStorageKey();
   try {
+    if (typeof window === "undefined") return {};
+    const key = getMoodStorageKey();
     return JSON.parse(localStorage.getItem(key) || "{}");
   } catch (_) {
     return {};

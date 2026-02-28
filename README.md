@@ -40,6 +40,16 @@ Response:
 
 `user_id` is read from `localStorage` (from Supabase auth); if not a number, `0` is sent. The chat shows a “Serelyn is thinking...” bubble until the response is received, then replaces it with the real message and emotion tag.
 
+### Deploy on Vercel
+
+1. Push your code to GitHub and import the repo in [Vercel](https://vercel.com).
+2. In the project **Settings → Environment Variables**, add:
+   - `REACT_APP_API_URL` = your Render backend URL (e.g. `https://serelyn-backend.onrender.com`)
+   - `REACT_APP_SUPABASE_URL` = your Supabase project URL
+   - `REACT_APP_SUPABASE_ANON_KEY` = your Supabase anon key
+3. Deploy. The build uses `npm run build` and outputs the `build` folder (see `vercel.json`).
+4. If a deployment fails, open the failed deployment → **Building** logs and fix the reported error. Redeploy after pushing a fix.
+
 ---
 
 # Getting Started with Create React App
