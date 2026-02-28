@@ -151,6 +151,15 @@ const GlobalStyles = () => (
       backdrop-filter: blur(20px);
       border-bottom: 1px solid rgba(144,171,139,0.15);
     }
+    .nav-burger {
+      display: flex; align-items: center; justify-content: center;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(144,171,139,0.2);
+      color: var(--secondary);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .nav-burger:hover { background: rgba(144,171,139,0.35); transform: scale(1.05); }
     @media (max-width: 600px) { .nav { padding: 16px 22px; } }
 
     .emotion-badge {
@@ -257,19 +266,39 @@ const Logo = ({ size = "md" }) => {
 
 // ─── Landing Page ─────────────────────────────────────────────────────────────
 const LandingPage = ({ onNavigate }) => {
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const featuresRef = React.useRef(null);
+
   const features = [
     { icon: "◎", title: "Emotion Detection", desc: "Understands what you're feeling, not just what you say." },
     { icon: "◯", title: "Always Present", desc: "No appointments. No waiting. Just open and talk." },
     { icon: "✦", title: "Private & Safe", desc: "Your thoughts stay yours. Always encrypted, always secure." },
   ];
 
+  const scrollToFeatures = () => {
+    setShowHowItWorks(true);
+    setTimeout(() => featuresRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  };
+
   return (
     <div style={{ minHeight: "100vh", position: "relative" }}>
       <BackgroundOrbs />
 
-      {/* ── Nav ── */}
+      {/* ── Nav: burger top-left → home (this page); right: Sign In / Get Started ── */}
       <nav className="nav">
-        <Logo />
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <a
+            href="#top"
+            className="nav-burger"
+            onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            aria-label="Home"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </a>
+          <Logo />
+        </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
           <button className="btn-ghost" style={{ fontSize: 14 }} onClick={() => onNavigate("auth")}>Sign In</button>
           <button className="btn-primary" style={{ padding: "10px 22px", fontSize: 14 }} onClick={() => onNavigate("auth")}>
@@ -334,7 +363,7 @@ const LandingPage = ({ onNavigate }) => {
             <button className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }} onClick={() => onNavigate("auth")}>
               Start Talking →
             </button>
-            <button className="btn-ghost" style={{ fontSize: 15, padding: "13px 28px" }}>
+            <button className="btn-ghost" style={{ fontSize: 15, padding: "13px 28px" }} onClick={scrollToFeatures}>
               How it works
             </button>
           </div>
@@ -345,7 +374,46 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* ── Features ── */}
+      {/* ── How it works: slide-down when button clicked ── */}
+      <section
+        ref={featuresRef}
+        style={{
+          overflow: "hidden",
+          maxHeight: showHowItWorks ? 520 : 0,
+          opacity: showHowItWorks ? 1 : 0,
+          transition: "max-height 0.5s ease, opacity 0.4s ease",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <div style={{ padding: "40px 24px 80px" }}>
+          <p style={{ textAlign: "center", fontSize: 13, letterSpacing: "0.1em", color: "var(--primary)", fontWeight: 500, marginBottom: 32, textTransform: "uppercase" }}>
+            How it works
+          </p>
+          <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24 }}>
+            {features.map((f, i) => (
+              <div
+                key={i}
+                className="glass-card anim-fade-up"
+                style={{ padding: "36px 30px", transition: "transform 0.3s, box-shadow 0.3s", cursor: "default", animationDelay: `${0.1 * i}s` }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = "0 28px 70px rgba(59,73,83,0.13)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
+              >
+                <div style={{
+                  width: 48, height: 48, borderRadius: 14,
+                  background: "linear-gradient(135deg, rgba(144,171,139,0.25) 0%, rgba(90,120,99,0.15) 100%)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 22, color: "var(--secondary)", marginBottom: 20,
+                }}>{f.icon}</div>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--dark)", marginBottom: 10 }}>{f.title}</h3>
+                <p style={{ fontSize: 14, color: "rgba(59,73,83,0.6)", lineHeight: 1.7 }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── What Serelyn offers ── */}
       <section style={{ padding: "80px 24px 100px", position: "relative", zIndex: 1 }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <p style={{ textAlign: "center", fontSize: 13, letterSpacing: "0.1em", color: "var(--primary)", fontWeight: 500, marginBottom: 48, textTransform: "uppercase" }}>
