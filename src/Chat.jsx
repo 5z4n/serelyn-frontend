@@ -14,6 +14,9 @@ const EMOTION_MAP = {
 const getEmotionStyle = (emotion) =>
   EMOTION_MAP[emotion] || EMOTION_MAP.neutral;
 
+// Render backend — set REACT_APP_API_URL in .env (e.g. https://serelyn-backend.onrender.com)
+// API: POST {API_BASE}/analyze  body: { user_id: number, text: string }
+//      → { emotion: "happy"|"sad"|"anxious"|"stressed"|"angry"|"neutral", response: string }
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 export default function Chat({ user, onLogout, onNavigateHome }) {
