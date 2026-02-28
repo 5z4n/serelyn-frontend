@@ -1,5 +1,6 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { signIn, signUp } from "./auth";
+import Chat from "./Chat";
 
 // ─── Global Styles ────────────────────────────────────────────────────────────
 const GlobalStyles = () => (
@@ -252,35 +253,6 @@ const Logo = ({ size = "md" }) => {
       </span>
     </div>
   );
-};
-
-// ─── Emotion Config ───────────────────────────────────────────────────────────
-const EMOTIONS = {
-  joy: { label: "Joyful", color: "#7EB77F", bg: "rgba(126,183,127,0.15)", icon: "✦" },
-  sadness: { label: "Sad", color: "#7A9EBF", bg: "rgba(122,158,191,0.15)", icon: "◌" },
-  anxiety: { label: "Anxious", color: "#C9A96E", bg: "rgba(201,169,110,0.15)", icon: "◎" },
-  anger: { label: "Frustrated", color: "#C97A7A", bg: "rgba(201,122,122,0.15)", icon: "◈" },
-  neutral: { label: "Calm", color: "#90AB8B", bg: "rgba(144,171,139,0.15)", icon: "◯" },
-  gratitude: { label: "Grateful", color: "#A89BC9", bg: "rgba(168,155,201,0.15)", icon: "✧" },
-};
-
-const detectEmotion = (text) => {
-  const t = text.toLowerCase();
-  if (/happy|joy|excit|great|amazing|wonderful|love|fantastic|good|yay/.test(t)) return "joy";
-  if (/sad|unhappy|depress|cry|miss|alone|lonely|hurt|lost/.test(t)) return "sadness";
-  if (/anxious|anxiety|worry|stress|nervous|panic|overwhelm|scared|fear/.test(t)) return "anxiety";
-  if (/angry|anger|frustrat|mad|upset|rage|annoy|hate/.test(t)) return "anger";
-  if (/thank|grateful|appreciat|bless/.test(t)) return "gratitude";
-  return "neutral";
-};
-
-const AI_RESPONSES = {
-  joy: "That's beautiful — joy is worth savoring. What sparked this feeling? I'd love to hear more about what's lighting you up right now.",
-  sadness: "I hear you, and I'm truly here with you in this. Sadness often means something mattered deeply. You don't have to carry it alone.",
-  anxiety: "It makes sense that you're feeling that way. Let's slow down together — take a breath. What feels most heavy right now?",
-  anger: "That sounds really frustrating. Your feelings are valid. Sometimes naming what's underneath the anger helps — what do you think is really hurting?",
-  neutral: "Thank you for sharing with me. I'm here, fully present. What's been on your mind lately?",
-  gratitude: "Gratitude is one of the most healing emotions there is. What you're noticing matters — keep holding onto that light.",
 };
 
 // ─── Landing Page ─────────────────────────────────────────────────────────────
@@ -661,264 +633,6 @@ const AuthPage = ({ onNavigate, onLogin }) => {
   );
 };
 
-// ─── Dashboard ────────────────────────────────────────────────────────────────
-const Dashboard = ({ user, onLogout }) => {
-  const [text, setText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [charCount, setCharCount] = useState(0);
-  const responseRef = useRef(null);
-
-  const greetings = [
-    "How are you feeling today?",
-    "What's on your heart right now?",
-    "Tell me what's on your mind.",
-    "I'm here. What would you like to share?",
-  ];
-  const [greeting] = useState(greetings[Math.floor(Math.random() * greetings.length)]);
-
-  const handleAnalyze = async () => {
-    if (!text.trim()) return;
-    setLoading(true);
-    setResult(null);
-
-    const emotion = detectEmotion(text);
-
-    try {
-      const res = await fetch("http://localhost:8000/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Pass stored Supabase user ID to the backend for personalization
-          "X-User-Id": localStorage.getItem("user_id") || "",
-        },
-        body: JSON.stringify({ text }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const r = {
-          emotion: data.emotion || emotion,
-          response: data.response || AI_RESPONSES[emotion],
-          text,
-          timestamp: new Date(),
-        };
-        setResult(r);
-        setHistory(h => [r, ...h.slice(0, 4)]);
-      } else {
-        throw new Error("Backend error");
-      }
-    } catch {
-      // Graceful offline / no-backend fallback
-      const r = { emotion, response: AI_RESPONSES[emotion], text, timestamp: new Date() };
-      setResult(r);
-      setHistory(h => [r, ...h.slice(0, 4)]);
-    } finally {
-      setLoading(false);
-      setTimeout(() => responseRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 100);
-    }
-  };
-
-  const em = result ? (EMOTIONS[result.emotion] || EMOTIONS.neutral) : null;
-
-  return (
-    <div style={{ minHeight: "100vh", position: "relative" }}>
-      <BackgroundOrbs />
-
-      {/* ── Nav ── */}
-      <nav className="nav">
-        <Logo />
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ fontSize: 13, color: "rgba(59,73,83,0.55)" }}>
-            Hello, <strong style={{ color: "var(--secondary)" }}>{user}</strong>
-          </span>
-          <button className="btn-ghost" style={{ padding: "8px 18px", fontSize: 13 }} onClick={onLogout}>
-            Sign out
-          </button>
-        </div>
-      </nav>
-
-      {/* ── Main ── */}
-      <main style={{ paddingTop: 100, paddingBottom: 80, position: "relative", zIndex: 1 }}>
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px" }}>
-
-          {/* Greeting */}
-          <div className="anim-fade-up" style={{ textAlign: "center", marginBottom: 48 }}>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(32px, 5vw, 48px)", color: "var(--dark)", lineHeight: 1.15, marginBottom: 12 }}>
-              {greeting}
-            </h1>
-            <p style={{ fontSize: 15, color: "rgba(59,73,83,0.55)", fontWeight: 300 }}>
-              This is your space. No judgment, only understanding.
-            </p>
-          </div>
-
-          {/* Input card */}
-          <div className="glass-card anim-fade-up" style={{ animationDelay: "0.15s", padding: "28px 28px 24px", marginBottom: 24 }}>
-            <div style={{ position: "relative" }}>
-              <textarea
-                className="chat-textarea"
-                placeholder="Share whatever is on your mind..."
-                value={text}
-                onChange={e => { setText(e.target.value); setCharCount(e.target.value.length); }}
-                onKeyDown={e => { if (e.key === "Enter" && e.metaKey) handleAnalyze(); }}
-                maxLength={800}
-              />
-              <span style={{ position: "absolute", bottom: 12, right: 14, fontSize: 11, color: "rgba(59,73,83,0.3)" }}>
-                {charCount}/800
-              </span>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-              <span style={{ fontSize: 12, color: "rgba(59,73,83,0.35)" }}>⌘ + Enter to send</span>
-              <div style={{ display: "flex", gap: 10 }}>
-                {result && (
-                  <button
-                    className="btn-ghost"
-                    style={{ padding: "10px 18px", fontSize: 13 }}
-                    onClick={() => { setText(""); setResult(null); setCharCount(0); }}
-                  >
-                    New Entry
-                  </button>
-                )}
-                <button
-                  className="btn-primary"
-                  onClick={handleAnalyze}
-                  disabled={loading || !text.trim()}
-                  style={{ padding: "10px 22px", fontSize: 14 }}
-                >
-                  {loading
-                    ? <span style={{ display: "flex", gap: 4 }}>
-                      <div className="loader-dot" />
-                      <div className="loader-dot" />
-                      <div className="loader-dot" />
-                    </span>
-                    : "Send →"
-                  }
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Loading state */}
-          {loading && (
-            <div className="anim-fade" style={{ textAlign: "center", padding: "20px 0", color: "rgba(59,73,83,0.45)", fontSize: 14 }}>
-              <div style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-                <div className="loader-dot" style={{ background: "var(--secondary)" }} />
-                <div className="loader-dot" style={{ background: "var(--secondary)" }} />
-                <div className="loader-dot" style={{ background: "var(--secondary)" }} />
-                <span style={{ marginLeft: 8, fontStyle: "italic" }}>Understanding your feelings…</span>
-              </div>
-            </div>
-          )}
-
-          {/* Response card */}
-          {result && !loading && (
-            <div ref={responseRef} className="response-card glass-card" style={{ padding: "28px 30px" }}>
-
-              {/* Emotion row */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-                <div style={{
-                  width: 38, height: 38, borderRadius: "50%",
-                  background: em.bg, display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 18, flexShrink: 0,
-                }}>
-                  {em.icon}
-                </div>
-                <div>
-                  <span style={{ fontSize: 11, color: "rgba(59,73,83,0.45)", letterSpacing: "0.06em", fontWeight: 500 }}>
-                    DETECTED EMOTION
-                  </span>
-                  <div>
-                    <span className="emotion-badge" style={{ background: em.bg, color: em.color, padding: "3px 12px", fontSize: 14 }}>
-                      {em.label}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ height: 1, background: "linear-gradient(to right, rgba(144,171,139,0.2), transparent)", marginBottom: 20 }} />
-
-              {/* AI response */}
-              <div style={{ display: "flex", gap: 14 }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: "50%", flexShrink: 0, marginTop: 2,
-                  background: "linear-gradient(135deg, var(--primary), var(--secondary))",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-                    <circle cx="12" cy="12" r="4" />
-                    <circle cx="12" cy="12" r="8" fill="none" stroke="white" strokeWidth="1.5" opacity="0.5" />
-                  </svg>
-                </div>
-                <div>
-                  <p style={{ fontSize: 11, color: "rgba(59,73,83,0.4)", letterSpacing: "0.06em", fontWeight: 500, marginBottom: 8 }}>
-                    SERELYN
-                  </p>
-                  <p style={{
-                    fontSize: 16, color: "var(--dark)", lineHeight: 1.75,
-                    fontWeight: 300, fontFamily: "var(--font-display)", fontStyle: "italic",
-                  }}>
-                    {result.response}
-                  </p>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div style={{ marginTop: 22, paddingTop: 16, borderTop: "1px solid rgba(144,171,139,0.12)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, color: "rgba(59,73,83,0.35)" }}>
-                  {result.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </span>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {["◎ Helpful", "◌ Not quite"].map(label => (
-                    <button
-                      key={label}
-                      style={{
-                        background: "rgba(144,171,139,0.1)", border: "1px solid rgba(144,171,139,0.2)",
-                        borderRadius: 50, padding: "5px 12px", fontSize: 11, color: "var(--secondary)",
-                        cursor: "pointer", fontFamily: "var(--font-body)", transition: "all 0.2s",
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = "rgba(144,171,139,0.2)"}
-                      onMouseLeave={e => e.currentTarget.style.background = "rgba(144,171,139,0.1)"}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Recent entries */}
-          {history.length > 1 && (
-            <div style={{ marginTop: 48 }}>
-              <p style={{ fontSize: 12, color: "rgba(59,73,83,0.4)", letterSpacing: "0.06em", fontWeight: 500, marginBottom: 16, textTransform: "uppercase" }}>
-                Recent Entries
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {history.slice(1).map((h, i) => {
-                  const e = EMOTIONS[h.emotion] || EMOTIONS.neutral;
-                  return (
-                    <div key={i} className="glass-card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, opacity: 1 - i * 0.15 }}>
-                      <span style={{ fontSize: 16, color: e.color }}>{e.icon}</span>
-                      <p style={{ fontSize: 13, color: "var(--dark)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.7 }}>
-                        {h.text}
-                      </p>
-                      <span className="emotion-badge" style={{ background: e.bg, color: e.color, fontSize: 11, flexShrink: 0 }}>
-                        {e.label}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
-  );
-};
-
 // ─── App Root ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState("landing");
@@ -940,7 +654,13 @@ export default function App() {
       <GlobalStyles />
       {page === "landing" && <LandingPage onNavigate={setPage} />}
       {page === "auth" && <AuthPage onNavigate={setPage} onLogin={handleLogin} />}
-      {page === "dashboard" && <Dashboard user={user} onLogout={handleLogout} />}
+      {page === "dashboard" && (
+        <Chat
+          user={user}
+          onLogout={handleLogout}
+          onNavigateHome={() => setPage("landing")}
+        />
+      )}
     </>
   );
 }

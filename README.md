@@ -1,3 +1,47 @@
+# Serelyn
+
+AI emotional companion — chat interface with live backend integration.
+
+## Chat integration (iMessage-style)
+
+- **`src/Chat.jsx`** — Main chat UI: conversation state, bubbles, loading, emotion tags, New Chat / Logout / Home.
+- **`src/Chat.css`** — Styles (palette: #EBF4DD, #90AB8B, #5A7863, #3B4953).
+- **App:** After login, users see `Chat` instead of the old dashboard. `App.jsx` imports `Chat` and renders it when `page === "dashboard"` with `user`, `onLogout`, and `onNavigateHome`.
+
+### Environment
+
+Copy `.env.example` to `.env` and set:
+
+- `REACT_APP_SUPABASE_URL` / `REACT_APP_SUPABASE_ANON_KEY` — auth.
+- `REACT_APP_API_URL` — Render backend base URL (no trailing slash), e.g. `https://your-app.onrender.com`.
+
+### API usage
+
+Every user message is sent to the Render backend:
+
+```http
+POST {REACT_APP_API_URL}/analyze
+Content-Type: application/json
+
+{
+  "user_id": 0,
+  "text": "user message"
+}
+```
+
+Response:
+
+```json
+{
+  "emotion": "happy | sad | anxious | stressed | angry | neutral",
+  "response": "LLM generated supportive text"
+}
+```
+
+`user_id` is read from `localStorage` (from Supabase auth); if not a number, `0` is sent. The chat shows a “Serelyn is thinking...” bubble until the response is received, then replaces it with the real message and emotion tag.
+
+---
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
