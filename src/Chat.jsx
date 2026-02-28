@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./Chat.css";
 import MoodTrackerCalendar, { saveMoodForDate } from "./MoodTrackerCalendar";
-import { getRandomResponse } from "./responses";
+import { getResponseForInput, getRandomResponse } from "./responses";
 
 const EMOTION_MAP = {
   happy: { label: "Happy", color: "#7EB77F", bg: "rgba(126,183,127,0.2)" },
@@ -53,7 +53,7 @@ function saveConversations(list) {
   try {
     if (typeof window === "undefined") return;
     localStorage.setItem(getStorageKey(), JSON.stringify(list));
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function todayKey() {
@@ -163,7 +163,7 @@ export default function Chat({ user, onLogout, onNavigateHome }) {
     typingSpeedRef.current = 32 + Math.random() * 24;
 
     setTimeout(() => {
-      const { emotion, response } = getRandomResponse();
+      const { emotion, response } = getResponseForInput(text);
       saveMoodForDate(todayKey(), emotion);
       const aiMsg = {
         id: "ai-" + Date.now(),

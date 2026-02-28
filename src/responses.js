@@ -62,6 +62,37 @@ export function getNextResponse() {
   return PREMADE_RESPONSES[i];
 }
 
+export function getResponseForInput(input = "") {
+  const lowerInput = input.toLowerCase();
+  
+  const keywords = {
+    sad: ["sad", "cry", "tears", "depressed", "down", "miss", "grief", "lonely", "alone", "hurt"],
+    anxious: ["anxious", "worry", "worried", "panic", "scared", "fear", "nervous", "overthinking", "sleep"],
+    stressed: ["stressed", "stress", "overwhelmed", "tired", "exhausted", "work", "burnout", "too much", "busy"],
+    angry: ["angry", "mad", "hate", "frustrated", "annoyed", "unfair", "furious", "upset"],
+    happy: ["happy", "good", "great", "joy", "calm", "peace", "better", "glad", "smile"]
+  };
+
+  let detectedEmotion = "neutral";
+  
+  for (const [emotion, words] of Object.entries(keywords)) {
+    if (words.some(w => lowerInput.includes(w))) {
+      detectedEmotion = emotion;
+      break;
+    }
+  }
+
+  // Filter responses by detected emotion
+  const matchingResponses = PREMADE_RESPONSES.filter(r => r.emotion === detectedEmotion);
+  
+  // If no responses match (shouldn't happen with our list, but fallback safe)
+  if (matchingResponses.length === 0) {
+    return PREMADE_RESPONSES[Math.floor(Math.random() * PREMADE_RESPONSES.length)];
+  }
+
+  return matchingResponses[Math.floor(Math.random() * matchingResponses.length)];
+}
+
 export function getRandomResponse() {
   return PREMADE_RESPONSES[Math.floor(Math.random() * PREMADE_RESPONSES.length)];
 }

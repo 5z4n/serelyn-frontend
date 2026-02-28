@@ -28,7 +28,7 @@ export function saveMoodForDate(dateKey, emotion) {
     const data = JSON.parse(localStorage.getItem(key) || "{}");
     data[dateKey] = (emotion || "neutral").toLowerCase();
     localStorage.setItem(key, JSON.stringify(data));
-  } catch (_) {}
+  } catch (_) { }
 }
 
 export function getMoodData() {
@@ -66,6 +66,7 @@ function getLast7Days() {
 export default function MoodTrackerCalendar({ onBack, initialTab = "calendar" }) {
   const [viewDate, setViewDate] = useState(() => new Date());
   const [tab, setTab] = useState(initialTab);
+  const [selectedDateKey, setSelectedDateKey] = useState(null);
   const moodData = getMoodData();
 
   useEffect(() => {
@@ -193,14 +194,16 @@ export default function MoodTrackerCalendar({ onBack, initialTab = "calendar" })
               c.empty ? (
                 <div key={`e-${i}`} className="mood-calendar-cell mood-calendar-cell--empty" />
               ) : (
-                <div
+                <button
+                  type="button"
                   key={c.dateKey}
-                  className={`mood-calendar-cell ${c.isToday ? "mood-calendar-cell--today" : ""}`}
+                  className={`mood-calendar-cell ${c.isToday ? "mood-calendar-cell--today" : ""} ${selectedDateKey === c.dateKey ? "mood-calendar-cell--selected" : ""}`}
                   title={c.color ? `${c.dateKey}: ${moodData[c.dateKey]}` : c.dateKey}
                   style={c.color ? { background: c.color, color: "#fff" } : {}}
+                  onClick={() => setSelectedDateKey(c.dateKey)}
                 >
                   {c.day}
-                </div>
+                </button>
               )
             )}
           </div>
