@@ -1,8 +1,2 @@
-import React from "react";
-import App from "./App";   // change name if your file name is different
-
-function App() {
-  return <App />;
-}
-
-export default App;
+// Re-export the main app so index.js can keep importing from "./App"
+export { default } from "./App.jsx";
